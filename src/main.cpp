@@ -49,7 +49,7 @@ void setup() {
   #endif
   D_println("Done.");
 
-  if (!micro_rosso::setup()) {
+  if (!micro_rosso::setup( "oruga_rclc" )) {
     D_println("FAIL micro_rosso.setup()");
   }
 
