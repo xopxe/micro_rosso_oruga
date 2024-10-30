@@ -18,13 +18,13 @@ MobilityTracked mobility;
 #include "micro_rosso_bme680.h"
 EnvBME680 env_sensor;
 
-#include "modules/ticker.h"
+#include "ticker.h"
 Ticker ticker;
 
-#include "modules/sync_time.h"
+#include "sync_time.h"
 SyncTime sync_time;
 
-#include "modules/ros_status.h"
+#include "ros_status.h"
 RosStatus ros_status;
 
 void setup() {
