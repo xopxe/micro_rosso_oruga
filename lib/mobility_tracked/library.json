@@ -1,0 +1,23 @@
+{
+    "name": "mobility_tracked",
+    "version": "0.0.1",
+    "description": "tracked robot using sabertooth controller and motor encoders",
+    "keywords": "ros, microros, robot",
+    "authors":
+    [
+      {
+        "name": "Jorge Visca",
+        "email": "jvisca@fing.edu.uy",
+        "url": "https://www.fing.edu.uy/~jvisca/",
+        "maintainer": true
+      }
+    ],
+    "license": "MIT",
+    "homepage": "https://github.com/xopxe/micro_rosso_platformio",
+    "dependencies": {
+      "micro_ros_platformio": "https://github.com/micro-ROS/micro_ros_platformio",
+      "madhephaestus/ESP32Encoder": "^0.11.7"
+    },
+    "frameworks": "arduino",
+    "platforms": "espressif32"
+  }
