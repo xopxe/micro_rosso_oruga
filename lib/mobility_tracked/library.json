@@ -13,9 +13,8 @@
       }
     ],
     "license": "MIT",
-    "homepage": "https://github.com/xopxe/micro_rosso_platformio",
+    "homepage": "https://github.com/xopxe/oruga",
     "dependencies": {
-      "micro_ros_platformio": "https://github.com/micro-ROS/micro_ros_platformio.git",
       "madhephaestus/ESP32Encoder": "^0.11.7"
     },
     "frameworks": "arduino",
