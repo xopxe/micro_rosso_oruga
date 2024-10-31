@@ -31,7 +31,7 @@ void setup() {
 
   //delay(1000);
 
-  //Must comcpile micro_rosso with correct DEBUG_CONSOLE in micro_rosso_config
+  //Must compile micro_rosso with correct DEBUG_CONSOLE in micro_rosso_config
   D_SerialBegin(DEBUG_CONSOLE_BAUD, SERIAL_8N1, DEBUG_CONSOLE_PIN_RX, DEBUG_CONSOLE_PIN_TX);
 
   D_println("Booting...");
