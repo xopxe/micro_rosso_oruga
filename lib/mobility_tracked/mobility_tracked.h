@@ -4,14 +4,15 @@
 #define TRACKED_TOPIC_CMD_VEL "/cmd_vel"
 #define TRACKED_TOPIC_JOY "/joy"
 
-class MobilityTracked {
+class MobilityTracked
+{
 public:
   MobilityTracked();
 
   static bool setup();
 
-  static void set_motor_enable(bool enable);  // TODO
+  static void set_motor_enable(bool enable); // TODO
   static void stop();
 };
 
-#endif  // __mobility_tracked_h
+#endif // __mobility_tracked_h

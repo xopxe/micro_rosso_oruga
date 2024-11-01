@@ -54,38 +54,49 @@ static int64_t enc_count_fr_lft = 0;
 static int64_t enc_count_fr_rgt = 0;
 static int64_t enc_count_rr_rgt = 0;
 
-class DisableInterruptsGuard {
+class DisableInterruptsGuard
+{
 public:
-  DisableInterruptsGuard() {
+  DisableInterruptsGuard()
+  {
     noInterrupts();
   }
 
-  ~DisableInterruptsGuard() {
+  ~DisableInterruptsGuard()
+  {
     interrupts();
   }
 };
 
-MobilityTracked::MobilityTracked(){
+MobilityTracked::MobilityTracked() {
   //(void*)TAG_ENCODER;
 };
 
-static void tracked_set_target_velocities(float linear, float angular) {
-  if (linear > MAX_SPEED) linear = MAX_SPEED;
-  else if (linear < -MAX_SPEED) linear = -MAX_SPEED;
-  if (angular > MAX_TURNSPEED) angular = MAX_TURNSPEED;
-  else if (angular < -MAX_TURNSPEED) angular = -MAX_TURNSPEED;
+static void tracked_set_target_velocities(float linear, float angular)
+{
+  if (linear > MAX_SPEED)
+    linear = MAX_SPEED;
+  else if (linear < -MAX_SPEED)
+    linear = -MAX_SPEED;
+  if (angular > MAX_TURNSPEED)
+    angular = MAX_TURNSPEED;
+  else if (angular < -MAX_TURNSPEED)
+    angular = -MAX_TURNSPEED;
 
-  if (target_linear != linear) {
-    //TODO pid reset?
+  if (target_linear != linear)
+  {
+    // TODO pid reset?
     target_linear = linear;
   }
-  if (target_angular != angular) {
-    //TODO pid reset?
+  if (target_angular != angular)
+  {
+    // TODO pid reset?
     target_angular = angular;
   }
 }
 
-static void set_target_velocities(const geometry_msgs__msg__Twist& msg_cmd_vel) {
+static void set_target_velocities(const geometry_msgs__msg__Twist &msg_cmd_vel)
+{
   set_control_time_ms = millis();
 
   float linear = msg_cmd_vel.linear.x;
@@ -94,7 +105,8 @@ static void set_target_velocities(const geometry_msgs__msg__Twist& msg_cmd_vel) 
   tracked_set_target_velocities(linear, angular);
 }
 
-static void set_target_joy(const sensor_msgs__msg__Joy& msg_joy) {
+static void set_target_joy(const sensor_msgs__msg__Joy &msg_joy)
+{
   set_control_time_ms = millis();
 
   float advance = msg_joy.axes.data[0];
@@ -115,13 +127,14 @@ static void set_target_joy(const sensor_msgs__msg__Joy& msg_joy) {
 #ifdef JOY_REGULATED
   tracked_set_target_velocities(advance * MAX_JOY_SPEED, turn * MAX_JOY_TURNSPEED);
 #else
-  //TODO disable motor pid regulataion (with a timeout?)
+  // TODO disable motor pid regulataion (with a timeout?)
   sabertooth.drive((int8_t)(advance * MAX_JOY_SPEED));
   sabertooth.turn((int8_t)(turn * MAX_JOY_TURNSPEED));
 #endif
 }
 
-static void compute_movement() {
+static void compute_movement()
+{
   unsigned long now;
   int64_t count_fr_lft;
   int64_t count_fr_rgt;
@@ -147,55 +160,56 @@ static void compute_movement() {
   wheel_angular_rr_lft = tics__to__rad_s * (count_rr_lft - enc_count_rr_lft);
   wheel_angular_rr_rgt = tics__to__rad_s * (count_rr_rgt - enc_count_rr_rgt);
 
-/*
-D_println(dt_us);
-D_print((1000000.0*(count_fr_lft - enc_count_fr_lft))/dt_us);
-D_print(" ^ ");
-D_println((1000000.0*(count_fr_rgt - enc_count_fr_rgt))/dt_us);
-D_print(((float)(count_rr_lft - enc_count_rr_lft))/dt_us);
-D_print(" v ");
-D_println(((float)(count_rr_rgt - enc_count_rr_rgt))/dt_us);
-*/
+  /*
+  D_println(dt_us);
+  D_print((1000000.0*(count_fr_lft - enc_count_fr_lft))/dt_us);
+  D_print(" ^ ");
+  D_println((1000000.0*(count_fr_rgt - enc_count_fr_rgt))/dt_us);
+  D_print(((float)(count_rr_lft - enc_count_rr_lft))/dt_us);
+  D_print(" v ");
+  D_println(((float)(count_rr_rgt - enc_count_rr_rgt))/dt_us);
+  */
 
-/*
-D_println(dt_us);
-D_print(wheel_angular_fr_lft);
-D_print(" ^ ");
-D_println(wheel_angular_fr_rgt);
-D_print(wheel_angular_rr_lft);
-D_print(" v ");
-D_println(wheel_angular_rr_rgt);
-*/
+  /*
+  D_println(dt_us);
+  D_print(wheel_angular_fr_lft);
+  D_print(" ^ ");
+  D_println(wheel_angular_fr_rgt);
+  D_print(wheel_angular_rr_lft);
+  D_print(" v ");
+  D_println(wheel_angular_rr_rgt);
+  */
 
   enc_count_fr_lft = count_fr_lft;
   enc_count_fr_rgt = count_fr_rgt;
   enc_count_rr_lft = count_rr_lft;
   enc_count_rr_rgt = count_rr_rgt;
 
-  current_linear_left = WHEEL_RADIUS * (wheel_angular_rr_lft+wheel_angular_fr_lft) / 2;  //FIXME
-  current_linear_right = WHEEL_RADIUS * (wheel_angular_rr_rgt+wheel_angular_fr_rgt) / 2;
+  current_linear_left = WHEEL_RADIUS * (wheel_angular_rr_lft + wheel_angular_fr_lft) / 2; // FIXME
+  current_linear_right = WHEEL_RADIUS * (wheel_angular_rr_rgt + wheel_angular_fr_rgt) / 2;
 
-/*
-D_print(current_linear_left);
-D_print(" L ");
-D_println(current_linear_right);
-*/
-
+  /*
+  D_print(current_linear_left);
+  D_print(" L ");
+  D_println(current_linear_right);
+  */
 }
 
-static void control_cb( int64_t last_call_time ) {
-  //D_print(".");
-  
+static void control_cb(int64_t last_call_time)
+{
+  // D_print(".");
+
   odom.update_pos(current_linear, 0.0, current_angular, last_dt_s);
 
   compute_movement();
-  current_linear = (current_linear_left + current_linear_right) / 2;                          // m/s
-  current_angular = atan((current_linear_right - current_linear_left) / LR_WHEELS_DISTANCE);  // rad/s
+  current_linear = (current_linear_left + current_linear_right) / 2;                         // m/s
+  current_angular = atan((current_linear_right - current_linear_left) / LR_WHEELS_DISTANCE); // rad/s
   // approx for low speeds
-  //MobilityTracked::current_angular = (current_linear_right - current_linear_left) / LR_WHEELS_DISTANCE;  // rad/s
+  // MobilityTracked::current_angular = (current_linear_right - current_linear_left) / LR_WHEELS_DISTANCE;  // rad/s
 
   unsigned long now = millis();
-  if (((now - set_control_time_ms) > STOP_TIMEOUT_MS)) {
+  if (((now - set_control_time_ms) > STOP_TIMEOUT_MS))
+  {
     // sabertooth watchdog must have stopped the motor, set as stopped and skip
     MobilityTracked::stop();
     return;
@@ -203,7 +217,7 @@ static void control_cb( int64_t last_call_time ) {
 
   float advance_power = pid_advance.compute(target_linear, current_linear);
   float turn_power = pid_turn.compute(target_angular, current_angular);
-  
+
   /*
   D_print("pid: ");
   D_print(current_linear);
@@ -214,27 +228,30 @@ static void control_cb( int64_t last_call_time ) {
   D_print("@");
   D_println((int8_t)turn_power);
   */
-  
+
   sabertooth.drive((int8_t)advance_power);
   sabertooth.turn((int8_t)turn_power);
 }
 
-void MobilityTracked::stop() {
+void MobilityTracked::stop()
+{
   tracked_set_target_velocities(0.0, 0.0);
-  pid_advance.reset_errors();  //TODO could go inside tracked_set_target_velocities()
-  pid_turn.reset_errors();     //TODO could go inside tracked_set_target_velocities()
+  pid_advance.reset_errors(); // TODO could go inside tracked_set_target_velocities()
+  pid_turn.reset_errors();    // TODO could go inside tracked_set_target_velocities()
   sabertooth.stop();
 }
 
 // TODO
-void MobilityTracked::set_motor_enable(boolean enable) {
+void MobilityTracked::set_motor_enable(boolean enable)
+{
 }
 
-static void cmd_vel_cb(const void* cmd_vel) {
+static void cmd_vel_cb(const void *cmd_vel)
+{
   set_target_velocities(msg_cmd_vel);
 
-  //const geometry_msgs__msg__Twist* msg = (const geometry_msgs__msg__Twist*)msgin;
-  //D_println(msg->linear.x);
+  // const geometry_msgs__msg__Twist* msg = (const geometry_msgs__msg__Twist*)msgin;
+  // D_println(msg->linear.x);
 
   D_print("cmd_vel: ");
   D_print(msg_cmd_vel.linear.x);
@@ -242,14 +259,17 @@ static void cmd_vel_cb(const void* cmd_vel) {
   D_println(msg_cmd_vel.angular.z);
 }
 
-static void joy_cb(const void* joy) {
+static void joy_cb(const void *joy)
+{
   set_target_joy(msg_joy);
 }
 
-bool MobilityTracked::setup() {
+bool MobilityTracked::setup()
+{
   D_println("setup: mobility_tracked");
-  
-  if (!odom.setup()) {
+
+  if (!odom.setup())
+  {
     D_println("failure initializing odom_helper.");
     return false;
   }
@@ -262,13 +282,12 @@ bool MobilityTracked::setup() {
   sabertooth.setTimeout(STOP_TIMEOUT_MS);
   D_println("done.");
 
-  //ESP32Encoder::useInternalWeakPullResistors = puType::down;
-  // Enable the weak pull up resistors
+  // ESP32Encoder::useInternalWeakPullResistors = puType::down;
+  //  Enable the weak pull up resistors
   ESP32Encoder::useInternalWeakPullResistors = puType::up;
-  
-  
-  //attachSingleEdge
-  //attachFullQuad
+
+  // attachSingleEdge
+  // attachFullQuad
   D_print("setup: encoders... ");
   encoder_rr_lft.attachSingleEdge(ENCODER_rr_lft_PIN_A, ENCODER_rr_lft_PIN_B);
   encoder_fr_lft.attachSingleEdge(ENCODER_fr_lft_PIN_A, ENCODER_fr_lft_PIN_B);
@@ -290,14 +309,14 @@ bool MobilityTracked::setup() {
   */
 
   sdescriptor_cmd_vel.type_support =
-    (rosidl_message_type_support_t*)ROSIDL_GET_MSG_TYPE_SUPPORT(geometry_msgs, msg, Twist);
+      (rosidl_message_type_support_t *)ROSIDL_GET_MSG_TYPE_SUPPORT(geometry_msgs, msg, Twist);
   sdescriptor_cmd_vel.topic_name = TRACKED_TOPIC_CMD_VEL;
   sdescriptor_cmd_vel.msg = &msg_cmd_vel;
   sdescriptor_cmd_vel.callback = &cmd_vel_cb;
   micro_rosso::subscribers.push_back(&sdescriptor_cmd_vel);
 
   sdescriptor_joy.type_support =
-    (rosidl_message_type_support_t*)ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, Joy);
+      (rosidl_message_type_support_t *)ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, Joy);
   sdescriptor_joy.topic_name = TRACKED_TOPIC_JOY;
   sdescriptor_joy.msg = &msg_joy;
   sdescriptor_joy.callback = &joy_cb;

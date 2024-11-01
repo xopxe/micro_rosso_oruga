@@ -1,7 +1,8 @@
 #ifndef __pid_h
 #define __pid_h
 
-class Pid {
+class Pid
+{
 
 public:
   Pid();
@@ -13,7 +14,7 @@ public:
 private:
   float min_out;
   float max_out;
-  float kf;  // forward controller
+  float kf; // forward controller
   float kp;
   float ki;
   float kd;
@@ -21,4 +22,4 @@ private:
   float prev_error;
 };
 
-#endif  // __pid_h
+#endif // __pid_h

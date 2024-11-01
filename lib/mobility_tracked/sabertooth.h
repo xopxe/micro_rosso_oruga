@@ -26,14 +26,15 @@ typedef Stream SabertoothStream;
 \class Sabertooth
 \brief Controls a %Sabertooth or %SyRen motor driver running in Packet Serial mode.
 */
-class Sabertooth {
+class Sabertooth
+{
 public:
   /*!
   Initializes a new instance of the Sabertooth class.
   The driver address is set to the value given, and the Arduino TX serial port is used.
   \param address The driver address.
   */
-  //Sabertooth(byte address);
+  // Sabertooth(byte address);
 
   /*!
   Initializes a new instance of the Sabertooth class.
@@ -41,14 +42,15 @@ public:
   \param address The driver address.
   \param port    The port to use.
   */
-  Sabertooth(byte address, SabertoothStream& port);
+  Sabertooth(byte address, SabertoothStream &port);
 
 public:
   /*!
   Gets the driver address.
   \return The driver address.
   */
-  inline byte address() const {
+  inline byte address() const
+  {
     return _address;
   }
 
@@ -56,7 +58,8 @@ public:
   Gets the serial port.
   \return The serial port.
   */
-  inline SabertoothStream& port() const {
+  inline SabertoothStream &port() const
+  {
     return _port;
   }
 
@@ -71,7 +74,7 @@ public:
   \param port     The port to use.
   \param dontWait If false, a delay is added to give the driver time to start up.
   */
-  static void autobaud(SabertoothStream& port, boolean dontWait = false);
+  static void autobaud(SabertoothStream &port, boolean dontWait = false);
 
   /*!
   Sends a packet serial command to the motor driver.
@@ -164,7 +167,7 @@ private:
 
 private:
   const byte _address;
-  SabertoothStream& _port;
+  SabertoothStream &_port;
 };
 
 #endif

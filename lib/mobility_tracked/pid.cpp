@@ -14,25 +14,31 @@
 
 #include "pid.h"
 
-Pid::Pid() {
+Pid::Pid()
+{
 }
 
 Pid::Pid(float min_out, float max_out, float kf, float kp, float ki, float kd)
-  : min_out(min_out),
-    max_out(max_out),
-    kf(kf),
-    kp(kp),
-    ki(ki),
-    kd(kd) {
+    : min_out(min_out),
+      max_out(max_out),
+      kf(kf),
+      kp(kp),
+      ki(ki),
+      kd(kd)
+{
 }
 
-float Pid::compute(float setpoint, float measured_value) {
+float Pid::compute(float setpoint, float measured_value)
+{
   float pid;
 
-  //setpoint is constrained between min and max to prevent pid from having too much error
-  if (setpoint > max_out) {
+  // setpoint is constrained between min and max to prevent pid from having too much error
+  if (setpoint > max_out)
+  {
     setpoint = max_out;
-  } else if (setpoint < min_out) {
+  }
+  else if (setpoint < min_out)
+  {
     setpoint = min_out;
   }
 
@@ -40,24 +46,29 @@ float Pid::compute(float setpoint, float measured_value) {
   float new_integral = integral + error;
   float derivative = error - prev_error;
 
-/*
-  if (setpoint == 0 && error == 0) {
-    integral = 0;
-    derivative = 0;
-  }
-*/
+  /*
+    if (setpoint == 0 && error == 0) {
+      integral = 0;
+      derivative = 0;
+    }
+  */
 
   pid = kf * setpoint;
   pid += kp * error;
   pid += ki * new_integral;
   pid += kd * derivative;
 
-  if (pid > max_out) {
+  if (pid > max_out)
+  {
     pid = max_out;
-  } else if (pid < min_out) {
+  }
+  else if (pid < min_out)
+  {
     pid = min_out;
-  } else {
-    integral = new_integral;  // only here, for windup protection
+  }
+  else
+  {
+    integral = new_integral; // only here, for windup protection
   }
 
   prev_error = error;
@@ -65,7 +76,8 @@ float Pid::compute(float setpoint, float measured_value) {
   return pid;
 }
 
-void Pid::update_constants(float min_out, float max_out, float kf, float kp, float ki, float kd) {
+void Pid::update_constants(float min_out, float max_out, float kf, float kp, float ki, float kd)
+{
   Pid::min_out = min_out;
   Pid::max_out = max_out;
   Pid::kf = kf;
@@ -74,7 +86,8 @@ void Pid::update_constants(float min_out, float max_out, float kf, float kp, flo
   Pid::kd = kd;
 }
 
-void Pid::reset_errors() {
+void Pid::reset_errors()
+{
   integral = 0;
   prev_error = 0;
 }
