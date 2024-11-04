@@ -13,10 +13,8 @@ static subscriber_descriptor sdescriptor_joy;
 
 #include "sabertooth.h"
 #include <ESP32Encoder.h>
-#include "pid.h"
+#include "fpid.h"
 #include "odom_helper.h"
-
-static const float TICS_TO_RAD = 2 * PI / PULSES_PER_REV;
 
 static Sabertooth sabertooth(128, SABERTOOTH_SERIAL);
 
@@ -26,10 +24,10 @@ static ESP32Encoder encoder_rr_lft;
 static ESP32Encoder encoder_fr_lft;
 static ESP32Encoder encoder_fr_rgt;
 static ESP32Encoder encoder_rr_rgt;
-static unsigned long last_encoder_us = 0UL;
+// static unsigned long last_encoder_us = 0UL;
 
-static Pid pid_advance(-126, 126, PID_LINEAL_KF, PID_LINEAL_KP, PID_LINEAL_KI, PID_LINEAL_KD);
-static Pid pid_turn(-126, 126, PID_TURN_KF, PID_TURN_KP, PID_TURN_KI, PID_TURN_KD);
+static Fpid pid_advance(-126, 126, PID_LINEAL_KF, PID_LINEAL_KP, PID_LINEAL_KI, PID_LINEAL_KD);
+static Fpid pid_turn(-126, 126, PID_TURN_KF, PID_TURN_KP, PID_TURN_KI, PID_TURN_KD);
 
 static OdomHelper odom;
 
@@ -42,7 +40,7 @@ static float target_angular;
 static float current_linear_left;
 static float current_linear_right;
 
-static float last_dt_s;
+// static float last_dt_s;
 
 static float wheel_angular_rr_lft;
 static float wheel_angular_fr_lft;
@@ -133,7 +131,7 @@ static void set_target_joy(const sensor_msgs__msg__Joy &msg_joy)
 #endif
 }
 
-static void compute_movement()
+static void compute_movement(float last_dt_s)
 {
   unsigned long now;
   int64_t count_fr_lft;
@@ -149,36 +147,37 @@ static void compute_movement()
     count_rr_rgt = encoder_rr_rgt.getCount();
   }
 
-  uint16_t dt_us = now - last_encoder_us;
-  last_dt_s = ((float)dt_us) / 1000000.0;
-  last_encoder_us = now;
+  // uint16_t dt_us = now - last_encoder_us;
+  // last_dt_s = ((float)dt_us) / 1000000.0;
+  // last_encoder_us = now;
 
   // rad/s
-  float tics__to__rad_s = 1000000.0 * TICS_TO_RAD / dt_us;
+  float tics__to__rad_s = TICKS_TO_RAD / last_dt_s;
+
   wheel_angular_fr_lft = tics__to__rad_s * (count_fr_lft - enc_count_fr_lft);
   wheel_angular_fr_rgt = tics__to__rad_s * (count_fr_rgt - enc_count_fr_rgt);
   wheel_angular_rr_lft = tics__to__rad_s * (count_rr_lft - enc_count_rr_lft);
   wheel_angular_rr_rgt = tics__to__rad_s * (count_rr_rgt - enc_count_rr_rgt);
 
   /*
-  D_println(dt_us);
-  D_print((1000000.0*(count_fr_lft - enc_count_fr_lft))/dt_us);
-  D_print(" ^ ");
-  D_println((1000000.0*(count_fr_rgt - enc_count_fr_rgt))/dt_us);
-  D_print(((float)(count_rr_lft - enc_count_rr_lft))/dt_us);
-  D_print(" v ");
-  D_println(((float)(count_rr_rgt - enc_count_rr_rgt))/dt_us);
-  */
+   D_println(dt_us);
+   D_print((1000000.0*(count_fr_lft - enc_count_fr_lft))/dt_us);
+   D_print(" ^ ");
+   D_println((1000000.0*(count_fr_rgt - enc_count_fr_rgt))/dt_us);
+   D_print((1000000.0*(count_rr_lft - enc_count_rr_lft))/dt_us);
+   D_print(" v ");
+   D_println((1000000.0*(count_rr_rgt - enc_count_rr_rgt))/dt_us);
+ // */
 
   /*
-  D_println(dt_us);
-  D_print(wheel_angular_fr_lft);
-  D_print(" ^ ");
-  D_println(wheel_angular_fr_rgt);
-  D_print(wheel_angular_rr_lft);
-  D_print(" v ");
-  D_println(wheel_angular_rr_rgt);
-  */
+    D_println(dt_us);
+    D_print(wheel_angular_fr_lft);
+    D_print(" ^ ");
+    D_println(wheel_angular_fr_rgt);
+    D_print(wheel_angular_rr_lft);
+    D_print(" v ");
+    D_println(wheel_angular_rr_rgt);
+  // */
 
   enc_count_fr_lft = count_fr_lft;
   enc_count_fr_rgt = count_fr_rgt;
@@ -189,21 +188,34 @@ static void compute_movement()
   current_linear_right = WHEEL_RADIUS * (wheel_angular_rr_rgt + wheel_angular_fr_rgt) / 2;
 
   /*
-  D_print(current_linear_left);
-  D_print(" L ");
-  D_println(current_linear_right);
-  */
+    D_print(current_linear_left);
+    D_print(" L ");
+    D_println(current_linear_right);
+  //  */
 }
 
 static void control_cb(int64_t last_call_time)
 {
   // D_print(".");
+  if (last_call_time == 0)
+  {
+    return;
+  }
 
-  odom.update_pos(current_linear, 0.0, current_angular, last_dt_s);
+  float time_step = last_call_time / 1000000000.0;
 
-  compute_movement();
+  odom.update_pos(current_linear, 0.0, current_angular, time_step);
+
+  compute_movement(time_step);
   current_linear = (current_linear_left + current_linear_right) / 2;                         // m/s
   current_angular = atan((current_linear_right - current_linear_left) / LR_WHEELS_DISTANCE); // rad/s
+
+  // /*
+  D_print(current_linear);
+  D_print(" m/s | rad/s ");
+  D_println(current_angular);
+  //  */
+
   // approx for low speeds
   // MobilityTracked::current_angular = (current_linear_right - current_linear_left) / LR_WHEELS_DISTANCE;  // rad/s
 
@@ -215,19 +227,14 @@ static void control_cb(int64_t last_call_time)
     return;
   }
 
-  float advance_power = pid_advance.compute(target_linear, current_linear);
-  float turn_power = pid_turn.compute(target_angular, current_angular);
+  float advance_power = pid_advance.compute(target_linear, current_linear, last_call_time);
+  float turn_power = pid_turn.compute(target_angular, current_angular, last_call_time);
 
-  /*
-  D_print("pid: ");
-  D_print(current_linear);
-  D_print("@");
-  D_print((int8_t)advance_power);
-  D_print(" ");
-  D_print(current_angular);
-  D_print("@");
-  D_println((int8_t)turn_power);
-  */
+  // /*
+  D_print(advance_power);
+  D_print(" ! ");
+  D_println(turn_power);
+  // */
 
   sabertooth.drive((int8_t)advance_power);
   sabertooth.turn((int8_t)turn_power);
@@ -236,8 +243,8 @@ static void control_cb(int64_t last_call_time)
 void MobilityTracked::stop()
 {
   tracked_set_target_velocities(0.0, 0.0);
-  pid_advance.reset_errors(); // TODO could go inside tracked_set_target_velocities()
-  pid_turn.reset_errors();    // TODO could go inside tracked_set_target_velocities()
+  pid_advance.reset_errors(0); // TODO could go inside tracked_set_target_velocities()
+  pid_turn.reset_errors(0);    // TODO could go inside tracked_set_target_velocities()
   sabertooth.stop();
 }
 
@@ -289,15 +296,23 @@ bool MobilityTracked::setup()
   // attachSingleEdge
   // attachFullQuad
   D_print("setup: encoders... ");
+#if defined(USE_FULL_QUADRATURE)
+  encoder_rr_lft.attachFullQuad(ENCODER_rr_lft_PIN_A, ENCODER_rr_lft_PIN_B);
+  encoder_fr_lft.attachFullQuad(ENCODER_fr_lft_PIN_A, ENCODER_fr_lft_PIN_B);
+  encoder_fr_rgt.attachFullQuad(ENCODER_fr_rgt_PIN_A, ENCODER_fr_rgt_PIN_B);
+  encoder_rr_rgt.attachFullQuad(ENCODER_rr_rgt_PIN_A, ENCODER_rr_rgt_PIN_B);
+#elif
   encoder_rr_lft.attachSingleEdge(ENCODER_rr_lft_PIN_A, ENCODER_rr_lft_PIN_B);
   encoder_fr_lft.attachSingleEdge(ENCODER_fr_lft_PIN_A, ENCODER_fr_lft_PIN_B);
   encoder_fr_rgt.attachSingleEdge(ENCODER_fr_rgt_PIN_A, ENCODER_fr_rgt_PIN_B);
   encoder_rr_rgt.attachSingleEdge(ENCODER_rr_rgt_PIN_A, ENCODER_rr_rgt_PIN_B);
+#endif
+
   encoder_rr_lft.clearCount();
   encoder_fr_lft.clearCount();
   encoder_fr_rgt.clearCount();
   encoder_rr_rgt.clearCount();
-  last_encoder_us = micros();
+  // last_encoder_us = micros();
   D_println("done.");
 
   /*
