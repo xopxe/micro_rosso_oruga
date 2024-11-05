@@ -12,8 +12,8 @@ ImuBNO08x imu;
 // #include "imu_mpu6050.h"
 // ImuMPU6050 imu;
 
-#include "mobility_tracked.h"
-MobilityTracked mobility;
+#include "mobility_skid.h"
+MobilitySkid mobility;
 
 #include "micro_rosso_bme680.h"
 EnvBME680 env_sensor;

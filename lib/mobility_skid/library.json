@@ -1,0 +1,22 @@
+{
+    "name": "mobility_skid",
+    "version": "0.0.1",
+    "description": "tracked robot using sabertooth controller and motor encoders",
+    "keywords": "ros, microros, robot",
+    "authors":
+    [
+      {
+        "name": "Jorge Visca",
+        "email": "jvisca@fing.edu.uy",
+        "url": "https://www.fing.edu.uy/~jvisca/",
+        "maintainer": true
+      }
+    ],
+    "license": "MIT",
+    "homepage": "https://github.com/xopxe/oruga",
+    "dependencies": {
+      "madhephaestus/ESP32Encoder": "^0.11.7"
+    },
+    "frameworks": "arduino",
+    "platforms": "espressif32"
+  }

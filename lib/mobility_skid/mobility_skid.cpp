@@ -1,7 +1,7 @@
 #include "micro_rosso.h"
 
-#include "mobility_tracked_config.h"
-#include "mobility_tracked.h"
+#include "mobility_skid_config.h"
+#include "mobility_skid.h"
 
 #include <geometry_msgs/msg/twist.h>
 #include <sensor_msgs/msg/joy.h>
@@ -26,19 +26,19 @@ static ESP32Encoder encoder_fr_rgt;
 static ESP32Encoder encoder_rr_rgt;
 // static unsigned long last_encoder_us = 0UL;
 
-static Fpid pid_advance(-126, 126, PID_LINEAL_KF, PID_LINEAL_KP, PID_LINEAL_KI, PID_LINEAL_KD);
-static Fpid pid_turn(-126, 126, PID_TURN_KF, PID_TURN_KP, PID_TURN_KI, PID_TURN_KD);
+static Fpid pid_lft(-126, 126, PID_LEFT_KF, PID_LEFT_KP, PID_LEFT_KI, PID_LEFT_KD);
+static Fpid pid_rgt(-126, 126, PID_RIGHT_KF, PID_RIGHT_KP, PID_RIGHT_KI, PID_RIGHT_KD);
 
 static OdomHelper odom;
 
-float current_linear;
-float current_angular;
+//float current_linear;
+//float current_angular;
 
-static float target_linear;
-static float target_angular;
+static float target_v_lft;
+static float target_v_rgt;
 
-static float current_linear_left;
-static float current_linear_right;
+static float current_v_lft;
+static float current_v_rgt;
 
 // static float last_dt_s;
 
@@ -66,7 +66,7 @@ public:
   }
 };
 
-MobilityTracked::MobilityTracked() {
+MobilitySkid::MobilitySkid() {
   //(void*)TAG_ENCODER;
 };
 
@@ -81,26 +81,19 @@ static void tracked_set_target_velocities(float linear, float angular)
   else if (angular < -MAX_TURNSPEED)
     angular = -MAX_TURNSPEED;
 
-  if (target_linear != linear)
-  {
-    // TODO pid reset?
-    target_linear = linear;
-  }
-  if (target_angular != angular)
-  {
-    // TODO pid reset?
-    target_angular = angular;
-  }
+  // reverse kinematics
+  float v_diff = LR_WHEELS_OFFSET * angular;
+  target_v_lft = linear - v_diff;
+  target_v_rgt = linear + v_diff;
 }
 
 static void set_target_velocities(const geometry_msgs__msg__Twist &msg_cmd_vel)
 {
   set_control_time_ms = millis();
 
-  float linear = msg_cmd_vel.linear.x;
-  float angular = msg_cmd_vel.angular.z;
-
-  tracked_set_target_velocities(linear, angular);
+  tracked_set_target_velocities(
+      msg_cmd_vel.linear.x,
+      msg_cmd_vel.angular.z);
 }
 
 static void set_target_joy(const sensor_msgs__msg__Joy &msg_joy)
@@ -131,67 +124,47 @@ static void set_target_joy(const sensor_msgs__msg__Joy &msg_joy)
 #endif
 }
 
-static void compute_movement(float last_dt_s)
+static void compute_movement(float time_step)
 {
-  //unsigned long now;
   int64_t count_fr_lft;
   int64_t count_fr_rgt;
   int64_t count_rr_lft;
   int64_t count_rr_rgt;
   {
-    volatile DisableInterruptsGuard interrupt;
-    //now = micros();
+    //volatile DisableInterruptsGuard interrupt;
     count_fr_lft = encoder_fr_lft.getCount();
     count_fr_rgt = encoder_fr_rgt.getCount();
     count_rr_lft = encoder_rr_lft.getCount();
     count_rr_rgt = encoder_rr_rgt.getCount();
   }
 
-  // uint16_t dt_us = now - last_encoder_us;
-  // last_dt_s = ((float)dt_us) / 1000000.0;
-  // last_encoder_us = now;
-
   // rad/s
-  float tics__to__rad_s = TICKS_TO_RAD / last_dt_s;
+  float tics__to__rad_s = TICKS_TO_RAD / time_step;
 
   wheel_angular_fr_lft = tics__to__rad_s * (count_fr_lft - enc_count_fr_lft);
   wheel_angular_fr_rgt = tics__to__rad_s * (count_fr_rgt - enc_count_fr_rgt);
   wheel_angular_rr_lft = tics__to__rad_s * (count_rr_lft - enc_count_rr_lft);
   wheel_angular_rr_rgt = tics__to__rad_s * (count_rr_rgt - enc_count_rr_rgt);
 
-  /*
-   D_println(dt_us);
-   D_print((1000000.0*(count_fr_lft - enc_count_fr_lft))/dt_us);
-   D_print(" ^ ");
-   D_println((1000000.0*(count_fr_rgt - enc_count_fr_rgt))/dt_us);
-   D_print((1000000.0*(count_rr_lft - enc_count_rr_lft))/dt_us);
-   D_print(" v ");
-   D_println((1000000.0*(count_rr_rgt - enc_count_rr_rgt))/dt_us);
- // */
-
-  /*
-    D_println(dt_us);
-    D_print(wheel_angular_fr_lft);
-    D_print(" ^ ");
-    D_println(wheel_angular_fr_rgt);
-    D_print(wheel_angular_rr_lft);
-    D_print(" v ");
-    D_println(wheel_angular_rr_rgt);
-  // */
-
   enc_count_fr_lft = count_fr_lft;
   enc_count_fr_rgt = count_fr_rgt;
   enc_count_rr_lft = count_rr_lft;
   enc_count_rr_rgt = count_rr_rgt;
 
-  current_linear_left = WHEEL_RADIUS * (wheel_angular_rr_lft + wheel_angular_fr_lft) / 2; // FIXME
-  current_linear_right = WHEEL_RADIUS * (wheel_angular_rr_rgt + wheel_angular_fr_rgt) / 2;
+  current_v_lft = WHEEL_RADIUS * (wheel_angular_rr_lft + wheel_angular_fr_lft) / 2; // FIXME
+  current_v_rgt = WHEEL_RADIUS * (wheel_angular_rr_rgt + wheel_angular_fr_rgt) / 2;
 
-  /*
-    D_print(current_linear_left);
-    D_print(" L ");
-    D_println(current_linear_right);
+  float current_linear = (current_v_lft + current_v_rgt) / 2;                         // m/s
+  float current_angular = atan((current_v_rgt - current_v_lft) / LR_WHEELS_DISTANCE); // rad/s
+
+  odom.update_pos(current_linear, 0.0, current_angular, time_step);
+
+  // /*
+  D_print(current_linear);
+  D_print(" m/s | rad/s ");
+  D_println(current_angular);
   //  */
+
 }
 
 static void control_cb(int64_t last_call_time)
@@ -202,54 +175,41 @@ static void control_cb(int64_t last_call_time)
     return;
   }
 
-  float time_step = last_call_time / 1000000000.0;
-
-  odom.update_pos(current_linear, 0.0, current_angular, time_step);
+  float time_step = last_call_time / 1000000000.0; // nanosec to sec
 
   compute_movement(time_step);
-  current_linear = (current_linear_left + current_linear_right) / 2;                         // m/s
-  current_angular = atan((current_linear_right - current_linear_left) / LR_WHEELS_DISTANCE); // rad/s
-
-  // /*
-  D_print(current_linear);
-  D_print(" m/s | rad/s ");
-  D_println(current_angular);
-  //  */
-
-  // approx for low speeds
-  // MobilityTracked::current_angular = (current_linear_right - current_linear_left) / LR_WHEELS_DISTANCE;  // rad/s
 
   unsigned long now = millis();
   if (((now - set_control_time_ms) > STOP_TIMEOUT_MS))
   {
     // sabertooth watchdog must have stopped the motor, set as stopped and skip
-    MobilityTracked::stop();
+    MobilitySkid::stop();
     return;
   }
 
-  float advance_power = pid_advance.compute(target_linear, current_linear, last_call_time);
-  float turn_power = pid_turn.compute(target_angular, current_angular, last_call_time);
+  float power_lft = pid_lft.compute(target_v_lft, current_v_lft, last_call_time);
+  float power_rgt = pid_rgt.compute(target_v_rgt, current_v_rgt, last_call_time);
 
   // /*
-  D_print(advance_power);
+  D_print(power_lft);
   D_print(" ! ");
-  D_println(turn_power);
+  D_println(power_rgt);
   // */
 
-  sabertooth.drive((int8_t)advance_power);
-  sabertooth.turn((int8_t)turn_power);
+  sabertooth.motor(1, (int8_t)power_lft);
+  sabertooth.motor(2, (int8_t)power_rgt);
 }
 
-void MobilityTracked::stop()
+void MobilitySkid::stop()
 {
   tracked_set_target_velocities(0.0, 0.0);
-  pid_advance.reset_errors(0); // TODO could go inside tracked_set_target_velocities()
-  pid_turn.reset_errors(0);    // TODO could go inside tracked_set_target_velocities()
+  pid_lft.reset_errors(0); // TODO could go inside tracked_set_target_velocities()
+  pid_rgt.reset_errors(0);    // TODO could go inside tracked_set_target_velocities()
   sabertooth.stop();
 }
 
 // TODO
-void MobilityTracked::set_motor_enable(boolean enable)
+void MobilitySkid::set_motor_enable(boolean enable)
 {
 }
 
@@ -271,9 +231,9 @@ static void joy_cb(const void *joy)
   set_target_joy(msg_joy);
 }
 
-bool MobilityTracked::setup()
+bool MobilitySkid::setup()
 {
-  D_println("setup: mobility_tracked");
+  D_println("setup: mobility_skid");
 
   if (!odom.setup())
   {
