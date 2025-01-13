@@ -1,3 +1,5 @@
+// Left / Right controller mode
+
 #include "micro_rosso.h"
 
 #include "mobility_skid_config.h"
@@ -159,12 +161,11 @@ static void compute_movement(float time_step)
 
   odom.update_pos(current_linear, 0.0, current_angular, time_step);
 
-  // /*
+  /*
   D_print(current_linear);
   D_print(" m/s | rad/s ");
   D_println(current_angular);
   //  */
-
 }
 
 static void control_cb(int64_t last_call_time)
@@ -190,7 +191,7 @@ static void control_cb(int64_t last_call_time)
   float power_lft = pid_lft.compute(target_v_lft, current_v_lft, last_call_time);
   float power_rgt = pid_rgt.compute(target_v_rgt, current_v_rgt, last_call_time);
 
-  // /*
+  /*
   D_print(power_lft);
   D_print(" ! ");
   D_println(power_rgt);
