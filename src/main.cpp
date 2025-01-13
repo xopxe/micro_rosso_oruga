@@ -1,5 +1,4 @@
 #include <Arduino.h>
-// #include <micro_ros_platformio.h>
 #include "micro_rosso.h"
 
 #include <Wire.h>
@@ -26,6 +25,9 @@ SyncTime sync_time;
 
 #include "ros_status.h"
 RosStatus ros_status;
+
+#include "parameter_persist.h"
+ParameterPersist persist;
 
 void setup()
 {
@@ -57,6 +59,10 @@ void setup()
   if (!env_sensor.setup(Wire))
   {
     D_println("FAIL env_sensor.setup()");
+  };
+
+  if (!persist.setup()) {
+    D_println("FAIL persist.setup()");
   };
 
   if (!mobility.setup())
