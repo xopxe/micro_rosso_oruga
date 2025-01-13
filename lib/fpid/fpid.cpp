@@ -60,12 +60,6 @@ float Fpid::compute(float setpoint, float measure, float time_step)
   return pid;
 }
 
-void Fpid::update_range(float min_out, float max_out)
-{
-  Fpid::min_out = min_out;
-  Fpid::max_out = max_out;
-}
-
 void Fpid::update_k_independent(float kf, float kp, float ki, float kd)
 {
   Fpid::kf = kf;

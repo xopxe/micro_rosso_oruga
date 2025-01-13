@@ -204,7 +204,7 @@ void MobilitySkid::stop()
 {
   tracked_set_target_velocities(0.0, 0.0);
   pid_lft.reset_errors(0); // TODO could go inside tracked_set_target_velocities()
-  pid_rgt.reset_errors(0);    // TODO could go inside tracked_set_target_velocities()
+  pid_rgt.reset_errors(0); // TODO could go inside tracked_set_target_velocities()
   sabertooth.stop();
 }
 
@@ -226,7 +226,7 @@ static void cmd_vel_cb(const void *cmd_vel)
   D_println(msg_cmd_vel.angular.z);
 }
 
-static void joy_cb(const void *joy)
+static void joy_cb(const void *cmd_joy)
 {
   set_target_joy(msg_joy);
 }

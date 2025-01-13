@@ -8,22 +8,22 @@ public:
   Fpid();
   Fpid(float min_out, float max_out, float kf, float kp, float ki, float kd);
 
-  void update_range(float min_out, float max_out);
+  float compute(float setpoint, float measure, float time_step);
+
   void update_k_independent(float kf, float kp, float ki, float kd);
   void update_k_dependent_ideal(float kf, float kc, float Ti, float Td);
 
-  float compute(float setpoint, float measure, float time_step);
-
   void reset_errors(float measure = 0.0);
 
-private:
   float min_out;
   float max_out;
+
   float kf; // forward controller
   float kp;
   float ki;
   float kd;
 
+private:
   float ki_term;
   float prev_measure;
 };
