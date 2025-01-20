@@ -6,10 +6,10 @@
 #define I2C_SCL 22
 #define I2C_SDA 21
 
-#include "micro_rosso_bno08x.h"
-ImuBNO08x imu;
-// #include "imu_mpu6050.h"
-// ImuMPU6050 imu;
+//#include "micro_rosso_bno08x.h"
+//ImuBNO08x imu;
+#include "micro_rosso_mpu6050.h"
+ImuMPU6050 imu;
 
 #include "mobility_skid.h"
 MobilitySkid mobility;
