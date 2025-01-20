@@ -2,16 +2,27 @@
 
 #include "micro_rosso.h"
 
+#include <rosidl_runtime_c/string_functions.h>
+#include <micro_ros_utilities/string_utilities.h>
+
 #include "mobility_skid_config.h"
 #include "mobility_skid.h"
 
 #include <geometry_msgs/msg/twist.h>
 #include <sensor_msgs/msg/joy.h>
+#include <sensor_msgs/msg/joint_state.h>
 
 static geometry_msgs__msg__Twist msg_cmd_vel;
 static sensor_msgs__msg__Joy msg_joy;
+static sensor_msgs__msg__JointState msg_joint_state;
+
 static subscriber_descriptor sdescriptor_cmd_vel;
 static subscriber_descriptor sdescriptor_joy;
+
+static publisher_descriptor pdescriptor_joint_state;
+static double state_position[4];
+static double state_velocity[4];
+rosidl_runtime_c__String state_name[4];
 
 #include "sabertooth.h"
 #include <ESP32Encoder.h>
@@ -33,8 +44,8 @@ static Fpid pid_rgt(-126, 126, PID_RIGHT_KF, PID_RIGHT_KP, PID_RIGHT_KI, PID_RIG
 
 static OdomHelper odom;
 
-//float current_linear;
-//float current_angular;
+// float current_linear;
+// float current_angular;
 
 static float target_v_lft;
 static float target_v_rgt;
@@ -54,6 +65,12 @@ static int64_t enc_count_fr_lft = 0;
 static int64_t enc_count_fr_rgt = 0;
 static int64_t enc_count_rr_rgt = 0;
 
+#define RCNOCHECK(fn)       \
+  {                         \
+    rcl_ret_t temp_rc = fn; \
+    (void)temp_rc;          \
+  }
+
 class DisableInterruptsGuard
 {
 public:
@@ -68,8 +85,22 @@ public:
   }
 };
 
-MobilitySkid::MobilitySkid() {
-  //(void*)TAG_ENCODER;
+MobilitySkid::MobilitySkid()
+{
+  msg_joint_state.header.frame_id = micro_ros_string_utilities_set(msg_joint_state.header.frame_id, "base_link");
+
+  msg_joint_state.name.size = msg_joint_state.name.capacity = 4;
+  msg_joint_state.name.data = state_name;
+  msg_joint_state.name.data[0] = micro_ros_string_utilities_set(msg_joint_state.name.data[0], "fl_wheel_joint");
+  msg_joint_state.name.data[1] = micro_ros_string_utilities_set(msg_joint_state.name.data[1], "fr_wheel_joint");
+  msg_joint_state.name.data[2] = micro_ros_string_utilities_set(msg_joint_state.name.data[2], "rl_wheel_joint");
+  msg_joint_state.name.data[3] = micro_ros_string_utilities_set(msg_joint_state.name.data[3], "rr_wheel_joint");
+
+  msg_joint_state.position.size = msg_joint_state.position.capacity = 4;
+  msg_joint_state.position.data = state_position;
+
+  msg_joint_state.velocity.size = msg_joint_state.velocity.capacity = 4;
+  msg_joint_state.velocity.data = state_velocity;
 };
 
 static void tracked_set_target_velocities(float linear, float angular)
@@ -133,7 +164,7 @@ static void compute_movement(float time_step)
   int64_t count_rr_lft;
   int64_t count_rr_rgt;
   {
-    //volatile DisableInterruptsGuard interrupt;
+    // volatile DisableInterruptsGuard interrupt;
     count_fr_lft = encoder_fr_lft.getCount();
     count_fr_rgt = encoder_fr_rgt.getCount();
     count_rr_lft = encoder_rr_lft.getCount();
@@ -166,6 +197,28 @@ static void compute_movement(float time_step)
   D_print(" m/s | rad/s ");
   D_println(current_angular);
   //  */
+}
+
+static void report_cb(int64_t last_call_time)
+{
+  msg_joint_state.velocity.data[0] = wheel_angular_fr_lft;
+  msg_joint_state.velocity.data[1] = wheel_angular_fr_rgt;
+  msg_joint_state.velocity.data[2] = wheel_angular_rr_lft;
+  msg_joint_state.velocity.data[3] = wheel_angular_rr_rgt;
+
+  msg_joint_state.position.data[0] = TICKS_TO_RAD * enc_count_fr_lft;
+  msg_joint_state.position.data[1] = TICKS_TO_RAD * enc_count_fr_rgt;
+  msg_joint_state.position.data[2] = TICKS_TO_RAD * enc_count_rr_lft;
+  msg_joint_state.position.data[3] = TICKS_TO_RAD * enc_count_rr_rgt;
+
+  //FIXME remove
+  //msg_joint_state.position.data[0] += 2*PI / 10;
+
+  micro_rosso::set_timestamp(msg_joint_state.header.stamp);
+  RCNOCHECK(rcl_publish(
+      &pdescriptor_joint_state.publisher,
+      &msg_joint_state,
+      NULL));
 }
 
 static void control_cb(int64_t last_call_time)
@@ -298,7 +351,15 @@ bool MobilitySkid::setup()
   sdescriptor_joy.callback = &joy_cb;
   micro_rosso::subscribers.push_back(&sdescriptor_joy);
 
+  pdescriptor_joint_state.qos = QOS_DEFAULT;
+  pdescriptor_joint_state.type_support =
+      (rosidl_message_type_support_t *)ROSIDL_GET_MSG_TYPE_SUPPORT(
+          sensor_msgs, msg, JointState);
+  pdescriptor_joint_state.topic_name = "joint_states";
+  micro_rosso::publishers.push_back(&pdescriptor_joint_state);
+
   micro_rosso::timer_control.callbacks.push_back(&control_cb);
+  micro_rosso::timer_report.callbacks.push_back(&report_cb);
 
   return true;
 }
