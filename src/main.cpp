@@ -6,8 +6,8 @@
 #define I2C_SCL 22
 #define I2C_SDA 21
 
-//#include "micro_rosso_bno08x.h"
-//ImuBNO08x imu;
+// #include "micro_rosso_bno08x.h"
+// ImuBNO08x imu;
 #include "micro_rosso_mpu6050.h"
 ImuMPU6050 imu;
 
@@ -26,8 +26,10 @@ SyncTime sync_time;
 #include "ros_status.h"
 RosStatus ros_status;
 
+#if ROS_PARAMETER_SERVER
 #include "parameter_persist.h"
 ParameterPersist persist;
+#endif
 
 void setup()
 {
@@ -61,9 +63,11 @@ void setup()
     D_println("FAIL env_sensor.setup()");
   };
 
+#if ROS_PARAMETER_SERVER
   if (!persist.setup()) {
     D_println("FAIL persist.setup()");
   };
+#endif
 
   if (!mobility.setup())
   {
