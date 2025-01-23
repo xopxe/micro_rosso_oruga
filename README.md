@@ -14,7 +14,7 @@ Oruga is a differential tracked robot for outdoor use. It is based on the [Lynxm
 
 //TODO Schematics
 
-## micro-ros interface.
+## micro-ros interface
 
 //FIXME
 
@@ -22,7 +22,7 @@ The default node name for this firmware is `oruga_rclc`.
 
 The robot subscribes to the following topics:
 
-* `geometry_msgs.msg.Twist /cmd_vel`
+* `geometry_msgs.msg.TwistStamped /cmd_vel`
 
 * `sensor_msgs.msg.Joy /joy`
 
@@ -34,9 +34,9 @@ The robot publishes the following topics:
 
 * `sensor_msgs.msg.JointState /joint_states`
 
-*  `nav_msgs.msg.Odometry /odom`
+* `nav_msgs.msg.Odometry /odom` (and the associated `/tf` transform)
 
-Some other interfaces associated with micro_rosso are available, such as the `/rosout` topic and time synchronization service. 
+Some other interfaces associated with micro_rosso are available, such as the `/rosout` topic and time synchronization service.
 
 ## Installation tutorial
 
@@ -56,9 +56,8 @@ Do `ros2 topic list` to see the robot's topics.
 
 ## Authors and acknowledgment
 
-jvisca@fing.edu.uy - [Grupo MINA](https://www.fing.edu.uy/inco/grupos/mina/), Facultad de Ingeniería - Udelar, 2024
+<jvisca@fing.edu.uy> - [Grupo MINA](https://www.fing.edu.uy/inco/grupos/mina/), Facultad de Ingeniería - Udelar, 2024
 
 ## License
 
 Apache 2.0
-

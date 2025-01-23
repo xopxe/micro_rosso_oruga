@@ -8,11 +8,11 @@
 #include "mobility_skid_config.h"
 #include "mobility_skid.h"
 
-#include <geometry_msgs/msg/twist.h>
+#include <geometry_msgs/msg/twist_stamped.h>
 #include <sensor_msgs/msg/joy.h>
 #include <sensor_msgs/msg/joint_state.h>
 
-static geometry_msgs__msg__Twist msg_cmd_vel;
+static geometry_msgs__msg__TwistStamped msg_cmd_vel;
 static sensor_msgs__msg__Joy msg_joy;
 static sensor_msgs__msg__JointState msg_joint_state;
 
@@ -44,8 +44,8 @@ static Fpid pid_rgt(-126, 126, PID_RIGHT_KF, PID_RIGHT_KP, PID_RIGHT_KI, PID_RIG
 
 static OdomHelper odom;
 
-// float current_linear;
-// float current_angular;
+// static float current_linear;
+// static float current_angular;
 
 static float target_v_lft;
 static float target_v_rgt;
@@ -103,7 +103,7 @@ MobilitySkid::MobilitySkid()
   msg_joint_state.velocity.data = state_velocity;
 };
 
-static void tracked_set_target_velocities(float linear, float angular)
+static void set_target_velocities(float linear, float angular)
 {
   if (linear > MAX_SPEED)
     linear = MAX_SPEED;
@@ -120,13 +120,15 @@ static void tracked_set_target_velocities(float linear, float angular)
   target_v_rgt = linear + v_diff;
 }
 
-static void set_target_velocities(const geometry_msgs__msg__Twist &msg_cmd_vel)
+static void set_target_velocities(const geometry_msgs__msg__TwistStamped &msg_cmd_vel)
 {
   set_control_time_ms = millis();
 
-  tracked_set_target_velocities(
-      msg_cmd_vel.linear.x,
-      msg_cmd_vel.angular.z);
+  // TODO verify msg_cmd_vel.header.stamp
+
+  set_target_velocities(
+      msg_cmd_vel.twist.linear.x,
+      msg_cmd_vel.twist.angular.z);
 }
 
 static void set_target_joy(const sensor_msgs__msg__Joy &msg_joy)
@@ -149,7 +151,7 @@ static void set_target_joy(const sensor_msgs__msg__Joy &msg_joy)
   */
 
 #ifdef JOY_REGULATED
-  tracked_set_target_velocities(advance * MAX_JOY_SPEED, turn * MAX_JOY_TURNSPEED);
+  set_target_velocities(advance * MAX_JOY_SPEED, turn * MAX_JOY_TURNSPEED);
 #else
   // TODO disable motor pid regulataion (with a timeout?)
   sabertooth.drive((int8_t)(advance * MAX_JOY_SPEED));
@@ -211,8 +213,8 @@ static void report_cb(int64_t last_call_time)
   msg_joint_state.position.data[2] = TICKS_TO_RAD * enc_count_rr_lft;
   msg_joint_state.position.data[3] = TICKS_TO_RAD * enc_count_rr_rgt;
 
-  //FIXME remove
-  //msg_joint_state.position.data[0] += 2*PI / 10;
+  // FIXME remove
+  // msg_joint_state.position.data[0] += 2*PI / 10;
 
   micro_rosso::set_timestamp(msg_joint_state.header.stamp);
   RCNOCHECK(rcl_publish(
@@ -256,9 +258,9 @@ static void control_cb(int64_t last_call_time)
 
 void MobilitySkid::stop()
 {
-  tracked_set_target_velocities(0.0, 0.0);
-  pid_lft.reset_errors(0); // TODO could go inside tracked_set_target_velocities()
-  pid_rgt.reset_errors(0); // TODO could go inside tracked_set_target_velocities()
+  set_target_velocities(0.0, 0.0);
+  pid_lft.reset_errors(0);
+  pid_rgt.reset_errors(0);
   sabertooth.stop();
 }
 
@@ -271,13 +273,15 @@ static void cmd_vel_cb(const void *cmd_vel)
 {
   set_target_velocities(msg_cmd_vel);
 
-  // const geometry_msgs__msg__Twist* msg = (const geometry_msgs__msg__Twist*)msgin;
+  // const geometry_msgs__msg__TwistStamped* msg = (const geometry_msgs__msg__TwistStamped*)msgin;
   // D_println(msg->linear.x);
 
+  /*
   D_print("cmd_vel: ");
   D_print(msg_cmd_vel.linear.x);
   D_print(" ");
   D_println(msg_cmd_vel.angular.z);
+  */
 }
 
 static void joy_cb(const void *cmd_joy)
@@ -287,9 +291,7 @@ static void joy_cb(const void *cmd_joy)
 
 bool MobilitySkid::setup()
 {
-  D_println("setup: mobility_skid");
-
-  if (!odom.setup())
+  if (!odom.setup("/odom", "odom", "base_footprint"))
   {
     D_println("failure initializing odom_helper.");
     return false;
@@ -337,8 +339,9 @@ bool MobilitySkid::setup()
   D_print("PID_TURN_KF ");D_println((float)PID_TURN_KF);
   */
 
+  D_print("setup: mobility_skid...");
   sdescriptor_cmd_vel.type_support =
-      (rosidl_message_type_support_t *)ROSIDL_GET_MSG_TYPE_SUPPORT(geometry_msgs, msg, Twist);
+      (rosidl_message_type_support_t *)ROSIDL_GET_MSG_TYPE_SUPPORT(geometry_msgs, msg, TwistStamped);
   sdescriptor_cmd_vel.topic_name = TRACKED_TOPIC_CMD_VEL;
   sdescriptor_cmd_vel.msg = &msg_cmd_vel;
   sdescriptor_cmd_vel.callback = &cmd_vel_cb;
@@ -355,11 +358,12 @@ bool MobilitySkid::setup()
   pdescriptor_joint_state.type_support =
       (rosidl_message_type_support_t *)ROSIDL_GET_MSG_TYPE_SUPPORT(
           sensor_msgs, msg, JointState);
-  pdescriptor_joint_state.topic_name = "joint_states";
+  pdescriptor_joint_state.topic_name = "/joint_states";
   micro_rosso::publishers.push_back(&pdescriptor_joint_state);
 
   micro_rosso::timer_control.callbacks.push_back(&control_cb);
   micro_rosso::timer_report.callbacks.push_back(&report_cb);
 
+  D_println("done.");
   return true;
 }
