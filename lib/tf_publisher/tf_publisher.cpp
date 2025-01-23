@@ -3,8 +3,6 @@
 #include "tf_publisher.h"
 #include <geometry_msgs/msg/transform_stamped.h>
 
-timer_descriptor *timer_announce = new timer_descriptor;
-
 static publisher_descriptor pdescriptor_tf_static;
 
 rmw_qos_profile_t qos_profile_static = rmw_qos_profile_default;
@@ -31,17 +29,12 @@ TF_publisher::TF_publisher()
   qos_profile_static.durability = RMW_QOS_POLICY_DURABILITY_TRANSIENT_LOCAL;
 };
 
-static void timer_handler_announce(rcl_timer_t *timer, int64_t last_call_time)
+static void announce_tf()
 {
 
-  //TODO send from here like this:
-  //RCNOCHECK(rcl_publish(&pdescriptor_tf_static.publisher, &msg_announce, NULL));
-
-  //one off, cancel timer
-  RCNOCHECK(rcl_timer_cancel(timer));
-  delete timer_announce;
-
-  return;
+  // TODO send from here like this:
+  // micro_rosso::set_timestamp(msg_announce.header.stamp);
+  // RCNOCHECK(rcl_publish(&pdescriptor_tf_static.publisher, &msg_announce, NULL));
 }
 
 bool TF_publisher::setup(const char *topic_name)
@@ -57,9 +50,7 @@ bool TF_publisher::setup(const char *topic_name)
   micro_rosso::publishers.push_back(&pdescriptor_tf_static);
 
   // topic to be sent after initialization completed
-  timer_announce->timeout_ns = RCL_MS_TO_NS(1000);
-  timer_announce->timer_handler = timer_handler_announce;
-  micro_rosso::timers.push_back(timer_announce);
+  micro_rosso::post_init.push_back(announce_tf);
 
   return true;
 }
