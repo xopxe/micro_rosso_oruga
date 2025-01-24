@@ -4,7 +4,7 @@ This is the firmware for the Oruga robot. It allows you to interact with the har
 
 This firmware is based on the [micro_rosso_platformio](https://github.com/xopxe/micro_rosso_platformio) library.
 
-This software runs on the onboard ESP32 microcontroller. The associated ROS system intended to run on a computer / SBC is available here: [oruga_ws](TODO). There, you can find the robot's URDF model and other high-level control tools.
+This software runs on the onboard ESP32 microcontroller. The associated ROS system intended to run on a computer / SBC is available here: [oruga_ws](https://github.com/xopxe/oruga_ws). You can find the robot's URDF model and other high-level control tools there.
 
 ## The robot
 
@@ -23,8 +23,6 @@ The default node name for this firmware is `oruga_rclc`.
 The robot subscribes to the following topics:
 
 * `geometry_msgs.msg.TwistStamped /cmd_vel`
-
-* `sensor_msgs.msg.Joy /joy`
 
 The robot publishes the following topics:
 
