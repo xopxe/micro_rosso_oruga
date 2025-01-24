@@ -53,8 +53,8 @@ static const float PID_RIGHT_KD = 0.0;                 // D control
 // left side encoders A&B pin definition swapped to reverse direction
 #define ENCODER_rr_lft_PIN_A 26
 #define ENCODER_rr_lft_PIN_B 25
-#define ENCODER_fr_lft_PIN_A 18
-#define ENCODER_fr_lft_PIN_B 5
+#define ENCODER_fr_lft_PIN_A 38
+#define ENCODER_fr_lft_PIN_B 37
 #define ENCODER_fr_rgt_PIN_A 23
 #define ENCODER_fr_rgt_PIN_B 19
 #define ENCODER_rr_rgt_PIN_A 36

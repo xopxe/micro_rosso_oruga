@@ -23,8 +23,8 @@ Ticker ticker;
 #include "sync_time.h"
 SyncTime sync_time;
 
-#include "ros_status.h"
-RosStatus ros_status;
+#include "status.h"
+Status status;
 
 #if ROS_PARAMETER_SERVER
 #include "parameter_persist.h"
@@ -64,7 +64,8 @@ void setup()
   };
 
 #if ROS_PARAMETER_SERVER
-  if (!persist.setup()) {
+  if (!persist.setup())
+  {
     D_println("FAIL persist.setup()");
   };
 #endif
@@ -84,9 +85,10 @@ void setup()
     D_println("FAIL sync_time.setup()");
   };
 
-  if (!ros_status.setup())
+  status.mobility = &mobility;
+  if (!status.setup())
   {
-    D_println("FAIL ros_status.setup()");
+    D_println("FAIL status.setup()");
   };
 
   D_println("Boot completed.");
