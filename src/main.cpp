@@ -58,7 +58,11 @@ void setup()
     D_println("FAIL imu.setup()");
   };
 
-  if (!env_sensor.setup(Wire))
+  if (!env_sensor.setup(Wire,
+                        "/internal/temperature",
+                        "/internal/humidity",
+                        "/internal/pressure",
+                        "/internal/gas_resistance"))
   {
     D_println("FAIL env_sensor.setup()");
   };
