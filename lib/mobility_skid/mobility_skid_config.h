@@ -50,14 +50,21 @@ static const float PID_RIGHT_KD = 0.0;                 // D control
 #define SABERTOOTH_SERIAL Serial2
 #define SABERTOOTH_TX_PIN 27
 
-// left side encoders A&B pin definition swapped to reverse direction
-#define ENCODER_rr_lft_PIN_A 26
-#define ENCODER_rr_lft_PIN_B 25
-#define ENCODER_fr_lft_PIN_A 38
-#define ENCODER_fr_lft_PIN_B 37
+#define ENCODER_fr_lft_PIN_A 37
+#define ENCODER_fr_lft_PIN_B 38
 #define ENCODER_fr_rgt_PIN_A 23
 #define ENCODER_fr_rgt_PIN_B 19
+#define ENCODER_rr_lft_PIN_A 25
+#define ENCODER_rr_lft_PIN_B 26
 #define ENCODER_rr_rgt_PIN_A 36
 #define ENCODER_rr_rgt_PIN_B 39
+
+// Encoder multipliers (for changing direction, for example)
+static const int8_t ENCODER_lft_MULT = -1;
+static const int8_t ENCODER_rgt_MULT = 1;
+
+// Motor output multipliers (for changing direction, for example)
+static const int8_t MOTOR_OUT_lft_MULT = 1; // weird i know
+static const int8_t MOTOR_OUT_rgt_MULT = 1;
 
 #endif // __mobility_skid_config_h

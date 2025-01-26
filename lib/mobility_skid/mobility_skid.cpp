@@ -167,10 +167,10 @@ static void compute_movement(float time_step)
   int64_t count_rr_rgt;
   {
     // volatile DisableInterruptsGuard interrupt;
-    count_fr_lft = encoder_fr_lft.getCount();
-    count_fr_rgt = encoder_fr_rgt.getCount();
-    count_rr_lft = encoder_rr_lft.getCount();
-    count_rr_rgt = encoder_rr_rgt.getCount();
+    count_fr_lft = encoder_fr_lft.getCount() * ENCODER_lft_MULT;
+    count_fr_rgt = encoder_fr_rgt.getCount() * ENCODER_rgt_MULT;
+    count_rr_lft = encoder_rr_lft.getCount() * ENCODER_lft_MULT;
+    count_rr_rgt = encoder_rr_rgt.getCount() * ENCODER_rgt_MULT;
   }
 
   // rad/s
@@ -252,8 +252,8 @@ static void control_cb(int64_t last_call_time)
   D_println(power_rgt);
   // */
 
-  sabertooth.motor(1, (int8_t)power_lft);
-  sabertooth.motor(2, (int8_t)power_rgt);
+  sabertooth.motor(1, MOTOR_OUT_lft_MULT * (int8_t)power_lft);
+  sabertooth.motor(2, MOTOR_OUT_rgt_MULT * (int8_t)power_rgt);
 }
 
 void MobilitySkid::stop()
