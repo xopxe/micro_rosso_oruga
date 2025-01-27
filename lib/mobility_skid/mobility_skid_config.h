@@ -28,7 +28,7 @@ static const float LR_WHEELS_OFFSET = 0.5*LR_WHEELS_DISTANCE; // distance betwee
 // compute dynamics from motors and geometry
 static const float MAX_WHEEL_ANGULAR = MAX_RPM_ALLOWED * 2 * PI / 60;        // rad/s
 static const float MAX_SPEED = MAX_WHEEL_ANGULAR * WHEEL_RADIUS;             // ~1.5   (datasheet says ~1.8m/s)
-static const float MAX_TURNSPEED = atan(2 * MAX_SPEED / LR_WHEELS_DISTANCE); // rad/s
+static const float MAX_TURNSPEED = MAX_SPEED / LR_WHEELS_OFFSET;
 
 
 // Pid for linear velocity, from speed in m/s to power level (-126..126)
