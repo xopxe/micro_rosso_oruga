@@ -78,6 +78,12 @@ Some pending work:
 
 * Alternative ROS architecture, with ros2_control and only joint driver on micro-ros.
 
+## FIXME
+
+Problems with the firmware to be fixed:
+
+* Too high topic rates break something in the serial link. 50Hz works fine, 100Hz corrupts serial. Sometimes the USB has to be reconnected.
+
 ## Authors and acknowledgment
 
 <jvisca@fing.edu.uy> - [Grupo MINA](https://www.fing.edu.uy/inco/grupos/mina/), Facultad de Ingeniería - Udelar, 2024

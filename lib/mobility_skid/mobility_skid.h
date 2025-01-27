@@ -1,8 +1,7 @@
 #ifndef __mobility_skid_h
 #define __mobility_skid_h
 
-#define TRACKED_TOPIC_CMD_VEL "/cmd_vel"
-#define TRACKED_TOPIC_JOY "/joy"
+#define SKID_TOPIC_CMD_VEL "/cmd_vel"
 
 class MobilitySkid
 {

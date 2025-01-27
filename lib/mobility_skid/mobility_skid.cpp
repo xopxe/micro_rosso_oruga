@@ -9,15 +9,12 @@
 #include "mobility_skid.h"
 
 #include <geometry_msgs/msg/twist_stamped.h>
-#include <sensor_msgs/msg/joy.h>
 #include <sensor_msgs/msg/joint_state.h>
 
 static geometry_msgs__msg__TwistStamped msg_cmd_vel;
-static sensor_msgs__msg__Joy msg_joy;
 static sensor_msgs__msg__JointState msg_joint_state;
 
 static subscriber_descriptor sdescriptor_cmd_vel;
-static subscriber_descriptor sdescriptor_joy;
 
 static publisher_descriptor pdescriptor_joint_state;
 static double state_position[4];
@@ -118,45 +115,6 @@ static void set_target_velocities(float linear, float angular)
   float v_diff = LR_WHEELS_OFFSET * angular;
   target_v_lft = linear - v_diff;
   target_v_rgt = linear + v_diff;
-}
-
-static void set_target_velocities(const geometry_msgs__msg__TwistStamped &msg_cmd_vel)
-{
-  set_control_time_ms = millis();
-
-  // TODO verify msg_cmd_vel.header.stamp
-
-  set_target_velocities(
-      msg_cmd_vel.twist.linear.x,
-      msg_cmd_vel.twist.angular.z);
-}
-
-static void set_target_joy(const sensor_msgs__msg__Joy &msg_joy)
-{
-  set_control_time_ms = millis();
-
-  float advance = msg_joy.axes.data[0];
-  float turn = msg_joy.axes.data[1];
-  /*
-  D_print("TOPIC joy: axes (");
-  D_print(msg_joy.axes.size);
-  D_print(") [0]");
-  D_print(msg_joy.axes.data[0]);
-  D_print(" [1]");
-  D_print(msg_joy.axes.data[1]);
-  D_print(" buttons (");
-  D_print(msg_joy.buttons.size);
-  D_print(") [0]");
-  D_println(msg_joy.buttons.data[0]);
-  */
-
-#ifdef JOY_REGULATED
-  set_target_velocities(advance * MAX_JOY_SPEED, turn * MAX_JOY_TURNSPEED);
-#else
-  // TODO disable motor pid regulataion (with a timeout?)
-  sabertooth.drive((int8_t)(advance * MAX_JOY_SPEED));
-  sabertooth.turn((int8_t)(turn * MAX_JOY_TURNSPEED));
-#endif
 }
 
 static void compute_movement(float time_step)
@@ -271,7 +229,14 @@ void MobilitySkid::set_motor_enable(boolean enable)
 
 static void cmd_vel_cb(const void *cmd_vel)
 {
-  set_target_velocities(msg_cmd_vel);
+  set_control_time_ms = millis();
+
+  // TODO verify msg_cmd_vel.header.stamp
+
+  set_target_velocities(
+      msg_cmd_vel.twist.linear.x,
+      msg_cmd_vel.twist.angular.z);
+
 
   // const geometry_msgs__msg__TwistStamped* msg = (const geometry_msgs__msg__TwistStamped*)msgin;
   // D_println(msg->linear.x);
@@ -282,11 +247,6 @@ static void cmd_vel_cb(const void *cmd_vel)
   D_print(" ");
   D_println(msg_cmd_vel.angular.z);
   */
-}
-
-static void joy_cb(const void *cmd_joy)
-{
-  set_target_joy(msg_joy);
 }
 
 bool MobilitySkid::setup()
@@ -342,17 +302,10 @@ bool MobilitySkid::setup()
   D_print("setup: mobility_skid...");
   sdescriptor_cmd_vel.type_support =
       (rosidl_message_type_support_t *)ROSIDL_GET_MSG_TYPE_SUPPORT(geometry_msgs, msg, TwistStamped);
-  sdescriptor_cmd_vel.topic_name = TRACKED_TOPIC_CMD_VEL;
+  sdescriptor_cmd_vel.topic_name = SKID_TOPIC_CMD_VEL;
   sdescriptor_cmd_vel.msg = &msg_cmd_vel;
   sdescriptor_cmd_vel.callback = &cmd_vel_cb;
   micro_rosso::subscribers.push_back(&sdescriptor_cmd_vel);
-
-  sdescriptor_joy.type_support =
-      (rosidl_message_type_support_t *)ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, Joy);
-  sdescriptor_joy.topic_name = TRACKED_TOPIC_JOY;
-  sdescriptor_joy.msg = &msg_joy;
-  sdescriptor_joy.callback = &joy_cb;
-  micro_rosso::subscribers.push_back(&sdescriptor_joy);
 
   pdescriptor_joint_state.qos = QOS_DEFAULT;
   pdescriptor_joint_state.type_support =

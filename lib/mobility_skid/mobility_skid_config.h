@@ -30,10 +30,6 @@ static const float MAX_WHEEL_ANGULAR = MAX_RPM_ALLOWED * 2 * PI / 60;        // 
 static const float MAX_SPEED = MAX_WHEEL_ANGULAR * WHEEL_RADIUS;             // ~1.5   (datasheet says ~1.8m/s)
 static const float MAX_TURNSPEED = atan(2 * MAX_SPEED / LR_WHEELS_DISTANCE); // rad/s
 
-// Mas speed to use under joystick operation
-static const float MAX_JOY_SPEED = MAX_SPEED;
-static const float MAX_JOY_TURNSPEED = MAX_TURNSPEED;
-// #define JOY_REGULATED         // if defined, speed is pid-regulated, otherwise go directly to motors.
 
 // Pid for linear velocity, from speed in m/s to power level (-126..126)
 static const float PID_LEFT_KF = 126 / MAX_SPEED;     // feed forward control
@@ -45,6 +41,7 @@ static const float PID_RIGHT_KF = 126 / MAX_SPEED; // feed forward control
 static const float PID_RIGHT_KP = 0.0 * PID_RIGHT_KF;   // P control
 static const float PID_RIGHT_KI = 0.0000001;                // I control
 static const float PID_RIGHT_KD = 0.0;                 // D control
+
 
 // Wiring pins
 #define SABERTOOTH_SERIAL Serial2
