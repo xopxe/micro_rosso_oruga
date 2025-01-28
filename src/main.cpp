@@ -6,6 +6,8 @@
 #define I2C_SCL 22
 #define I2C_SDA 21
 
+#define SERIAL_BAUD 115200
+
 // #include "micro_rosso_bno08x.h"
 // ImuBNO08x imu;
 #include "micro_rosso_mpu6050.h"
@@ -43,7 +45,7 @@ void setup()
   // WiFi.config(MICRO_ROS_TRANSPORT_WIFI_STATIC_IP,MICRO_ROS_TRANSPORT_WIFI_STATIC_GATEWAY, MICRO_ROS_TRANSPORT_WIFI_STATIC_SUBNET);
   set_microros_wifi_transports(ssid, pass, agent_ip, agent_port);
 #elif defined(MICRO_ROS_TRANSPORT_ARDUINO_SERIAL)
-  Serial.begin(115200);
+  Serial.begin(SERIAL_BAUD);
   set_microros_serial_transports(Serial);
 #endif
   D_println("Done.");

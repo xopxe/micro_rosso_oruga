@@ -44,8 +44,10 @@ static OdomHelper odom;
 // static float current_linear;
 // static float current_angular;
 
-static float target_v_lft;
-static float target_v_rgt;
+//static float target_v_lft;
+//static float target_v_rgt;
+static float target_linear;
+static float target_angular;
 
 static float current_v_lft;
 static float current_v_rgt;
@@ -103,18 +105,18 @@ MobilitySkid::MobilitySkid()
 static void set_target_velocities(float linear, float angular)
 {
   if (linear > MAX_SPEED)
-    linear = MAX_SPEED;
+    target_linear = MAX_SPEED;
   else if (linear < -MAX_SPEED)
-    linear = -MAX_SPEED;
-  if (angular > MAX_TURNSPEED)
-    angular = MAX_TURNSPEED;
-  else if (angular < -MAX_TURNSPEED)
-    angular = -MAX_TURNSPEED;
+    target_linear = -MAX_SPEED;
+  else
+    target_linear = linear;
 
-  // reverse kinematics
-  float v_diff = LR_WHEELS_OFFSET * angular;
-  target_v_lft = linear - v_diff;
-  target_v_rgt = linear + v_diff;
+  if (angular > MAX_TURNSPEED)
+    target_angular = MAX_TURNSPEED;
+  else if (angular < -MAX_TURNSPEED)
+    target_angular = -MAX_TURNSPEED;
+  else
+     target_angular = angular;
 }
 
 static void compute_movement(float time_step)
@@ -193,13 +195,17 @@ static void control_cb(int64_t last_call_time)
 
   compute_movement(time_step);
 
-  unsigned long now = millis();
-  if (((now - set_control_time_ms) > STOP_TIMEOUT_MS))
+  if (((millis() - set_control_time_ms) > STOP_TIMEOUT_MS))
   {
     // sabertooth watchdog must have stopped the motor, set as stopped and skip
     MobilitySkid::stop();
     return;
   }
+
+  // reverse kinematics
+  float v_diff = LR_WHEELS_OFFSET * target_angular;
+  float target_v_lft = target_linear - v_diff;
+  float target_v_rgt = target_linear + v_diff;
 
   float power_lft = pid_lft.compute(target_v_lft, current_v_lft, last_call_time);
   float power_rgt = pid_rgt.compute(target_v_rgt, current_v_rgt, last_call_time);
@@ -236,10 +242,6 @@ static void cmd_vel_cb(const void *cmd_vel)
   set_target_velocities(
       msg_cmd_vel.twist.linear.x,
       msg_cmd_vel.twist.angular.z);
-
-
-  // const geometry_msgs__msg__TwistStamped* msg = (const geometry_msgs__msg__TwistStamped*)msgin;
-  // D_println(msg->linear.x);
 
   /*
   D_print("cmd_vel: ");
@@ -300,6 +302,7 @@ bool MobilitySkid::setup()
   */
 
   D_print("setup: mobility_skid...");
+  sdescriptor_cmd_vel.qos = QOS_BEST_EFFORT;
   sdescriptor_cmd_vel.type_support =
       (rosidl_message_type_support_t *)ROSIDL_GET_MSG_TYPE_SUPPORT(geometry_msgs, msg, TwistStamped);
   sdescriptor_cmd_vel.topic_name = SKID_TOPIC_CMD_VEL;

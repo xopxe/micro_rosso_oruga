@@ -56,13 +56,17 @@ Some other interfaces associated with micro_rosso are available, such as the `/r
 
 //TODO udev
 
-Connect your PC to the USB cable, and on a console run:
+Connect your PC to the USB cable, and on a console start the agent:
 
 ```sh
 docker run -it --rm --device=/dev/ttyUSB0 --net=host microros/micro-ros-agent:jazzy serial --dev /dev/ttyUSB0 -b 115200
 ```
 
 Do `ros2 topic list` to see the robot's topics.
+
+### Topic rates vs Serial speeds
+
+At the default 115200 bauds serial setting the system handles topics at about 100Hz. If you go over this, the system might suffer random disconnects. If you need more than this you can increase the serial link speed with the`#SERIAL_BAUD` define in the `main.cpp`. You can try 230400, 460800, 921600, and 1500000. Remeber to also change the agent's `-b` parameter to match.
 
 ## TODO
 
@@ -82,7 +86,7 @@ Some pending work:
 
 Problems with the firmware to be fixed:
 
-* Too high topic rates break something in the serial link. 50Hz works fine, 100Hz corrupts serial. Sometimes the USB has to be reconnected.
+* ...
 
 ## Authors and acknowledgment
 
